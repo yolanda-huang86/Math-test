@@ -1,0 +1,1671 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>儿童数学能力综合测评表</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- PDF预览弹窗 -->
+    <div id="pdfPreviewModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; z-index:9999; background:rgba(0,0,0,0.85); overflow-y:auto; padding:20px;">
+        <div style="max-width:800px; margin:0 auto; background:#fff; border-radius:12px; padding:20px; box-shadow:0 10px 40px rgba(0,0,0,0.5);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h2 style="color:#1e293b; font-size:1.4rem;">PDF 预览</h2>
+                <div style="display:flex; gap:10px;">
+                    <button id="pdfConfirmBtn" style="padding:10px 24px; background:#10b981; color:#fff; border:none; border-radius:8px; font-size:1rem; cursor:pointer; font-weight:600;">确认导出</button>
+                    <button id="pdfCancelBtn" style="padding:10px 24px; background:#ef4444; color:#fff; border:none; border-radius:8px; font-size:1rem; cursor:pointer; font-weight:600;">取消</button>
+                </div>
+            </div>
+            <div id="pdfPreviewContent" style="border:1px solid #e2e8f0; border-radius:8px; overflow:hidden;"></div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+            color: #e2e8f0;
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(56, 189, 248, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
+            z-index: -1;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 30px;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            box-shadow: 
+                0 20px 40px rgba(0, 0, 0, 0.4),
+                0 0 100px rgba(56, 189, 248, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .container::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6, #10b981, #f59e0b);
+            border-radius: 24px 24px 0 0;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            position: relative;
+            padding-bottom: 25px;
+        }
+
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 25%;
+            right: 25%;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, #60a5fa, transparent);
+        }
+
+        .header h1 {
+            font-size: 2.8rem;
+            background: linear-gradient(90deg, #60a5fa, #a78bfa, #34d399);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 15px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-shadow: 0 5px 15px rgba(96, 165, 250, 0.3);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            color: #94a3b8;
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        .dimensions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .dimension-card {
+            background: rgba(30, 41, 59, 0.7);
+            border-radius: 18px;
+            padding: 25px;
+            border: 1px solid rgba(96, 165, 250, 0.2);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .dimension-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(96, 165, 250, 0.4);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .dimension-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+            border-radius: 18px 18px 0 0;
+        }
+
+        .dimension-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .dimension-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-size: 1.5rem;
+            color: white;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+
+        .dimension-title {
+            font-size: 1.4rem;
+            color: #f1f5f9;
+            font-weight: 600;
+        }
+
+        .dimension-description {
+            color: #94a3b8;
+            font-size: 0.95rem;
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+
+        .question-sequence-input {
+            width: 100%;
+            padding: 15px;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(96, 165, 250, 0.3);
+            border-radius: 10px;
+            color: #e2e8f0;
+            font-size: 1rem;
+            margin-bottom: 25px;
+            transition: all 0.3s ease;
+        }
+
+        .question-sequence-input:focus {
+            outline: none;
+            border-color: #60a5fa;
+            box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2);
+        }
+
+        .question-sequence-input::placeholder {
+            color: #64748b;
+        }
+
+        .input-group {
+            display: grid;
+            grid-template-columns: 100px 100px 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+            align-items: end;
+        }
+
+        .input-field {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(96, 165, 250, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            color: #e2e8f0;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #60a5fa;
+            box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2);
+        }
+
+        .input-label {
+            display: block;
+            color: #cbd5e1;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        .score-display {
+            text-align: center;
+            font-size: 1.1rem;
+            color: #60a5fa;
+            margin-top: 10px;
+            font-weight: 500;
+        }
+
+        .auto-score-field {
+            background: rgba(16, 185, 129, 0.15);
+            border: 2px solid rgba(16, 185, 129, 0.5);
+            border-radius: 12px;
+            padding: 12px 20px;
+            color: #34d399;
+            font-size: 2.2rem;
+            font-weight: 800;
+            text-align: center;
+            min-height: 54px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            letter-spacing: 2px;
+            text-shadow: 0 0 20px rgba(52, 211, 153, 0.3);
+        }
+
+        .total-section {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9));
+            border-radius: 18px;
+            padding: 30px;
+            margin-bottom: 40px;
+            border: 1px solid rgba(96, 165, 250, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .total-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #10b981, #f59e0b);
+        }
+
+        .total-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .total-header h2 {
+            font-size: 2.2rem;
+            background: linear-gradient(90deg, #10b981, #f59e0b);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .total-header p {
+            color: #94a3b8;
+            font-size: 1.1rem;
+        }
+
+        .total-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            border: 1px solid rgba(96, 165, 250, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(96, 165, 250, 0.4);
+        }
+
+        .stat-value {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .stat-label {
+            color: #94a3b8;
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+
+        .level-display {
+            display: inline-block;
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border-radius: 50px;
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: white;
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
+            margin-top: 10px;
+        }
+
+        .evaluation-section {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9));
+            border-radius: 18px;
+            padding: 30px;
+            border: 1px solid rgba(96, 165, 250, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .evaluation-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #8b5cf6, #ec4899);
+        }
+
+        .evaluation-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .evaluation-header h2 {
+            font-size: 2.2rem;
+            background: linear-gradient(90deg, #8b5cf6, #ec4899);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .evaluation-content {
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(139, 92, 246, 0.3);
+        }
+
+        .evaluation-category {
+            margin-bottom: 25px;
+        }
+
+        .evaluation-category:last-child {
+            margin-bottom: 0;
+        }
+
+        .category-title {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .category-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-size: 1.2rem;
+            color: white;
+        }
+
+        .category-name {
+            font-size: 1.3rem;
+            color: #f1f5f9;
+            font-weight: 600;
+        }
+
+        .category-content {
+            color: #cbd5e1;
+            line-height: 1.6;
+            font-size: 1.05rem;
+            padding-left: 55px;
+        }
+
+        .category-content p {
+            margin-bottom: 10px;
+        }
+
+        .category-content p:last-child {
+            margin-bottom: 0;
+        }
+
+        .btn-generate {
+            display: block;
+            width: 100%;
+            padding: 20px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            border: none;
+            border-radius: 15px;
+            color: white;
+            font-size: 1.3rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+            letter-spacing: 1px;
+        }
+
+        .btn-generate:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-generate:active {
+            transform: translateY(-1px);
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            color: #64748b;
+            font-size: 0.95rem;
+            padding-top: 25px;
+            border-top: 1px solid rgba(96, 165, 250, 0.2);
+        }
+
+        .btn-pdf {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 18px 50px;
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            border: none;
+            border-radius: 15px;
+            color: white;
+            font-size: 1.3rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            letter-spacing: 2px;
+            box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-pdf::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .btn-pdf:hover::before {
+            left: 100%;
+        }
+
+        .btn-pdf:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 30px rgba(239, 68, 68, 0.5);
+        }
+
+        .btn-pdf:active {
+            transform: translateY(-1px);
+        }
+
+        .btn-pdf i {
+            font-size: 1.4rem;
+        }
+
+        .chart-section {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9));
+            border-radius: 18px;
+            padding: 30px;
+            margin-bottom: 40px;
+            border: 1px solid rgba(96, 165, 250, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chart-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #ec4899, #f59e0b);
+            border-radius: 18px 18px 0 0;
+        }
+
+        .chart-container {
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            height: 400px;
+            position: relative;
+        }
+
+        .chart-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .chart-btn {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            min-width: 140px;
+        }
+
+        .chart-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
+        }
+
+        .chart-btn:active {
+            transform: translateY(-1px);
+        }
+
+        .chart-btn:nth-child(2) {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+
+        .chart-btn:nth-child(3) {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+
+        .chart-btn:nth-child(4) {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+        }
+
+        .chart-btn:nth-child(5) {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2.2rem;
+            }
+            
+            .dimensions-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .dimension-card {
+                padding: 20px;
+            }
+            
+            .input-group {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+            
+            .total-stats {
+                grid-template-columns: 1fr;
+            }
+            
+            .stat-value {
+                font-size: 2.8rem;
+            }
+            
+            .chart-container {
+                height: 350px;
+                padding: 15px;
+            }
+            
+            .chart-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .chart-btn {
+                min-width: auto;
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 1.8rem;
+            }
+            
+            .dimension-card {
+                padding: 15px;
+            }
+            
+            .dimension-icon {
+                width: 40px;
+                height: 40px;
+                font-size: 1.2rem;
+            }
+            
+            .dimension-title {
+                font-size: 1.2rem;
+            }
+            
+            .chart-container {
+                height: 300px;
+                padding: 10px;
+            }
+            
+            .chart-actions {
+                gap: 10px;
+            }
+            
+            .chart-btn {
+                padding: 10px 15px;
+                font-size: 0.9rem;
+            }
+        }
+
+        .glow {
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from {
+                box-shadow: 0 0 20px rgba(96, 165, 250, 0.2);
+            }
+            to {
+                box-shadow: 0 0 30px rgba(96, 165, 250, 0.4);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-calculator"></i> 儿童数学能力综合测评表</h1>
+            <p>科学评估 · 专业分析 · 个性化提升建议 · 助力孩子数学思维全面发展</p>
+        </div>
+
+        <div class="dimensions-grid">
+            <!-- 维度1 -->
+            <div class="dimension-card" id="dimension1">
+                <div class="dimension-header">
+                    <div class="dimension-icon">
+                        <i class="fas fa-calculator"></i>
+                    </div>
+                    <h3 class="dimension-title">1. 数感与运算能力</h3>
+                </div>
+                <p class="dimension-description">计算准度、速度、数量推理</p>
+                
+                <input type="text" class="question-sequence-input" placeholder="请输入题目序号（例如：1-5, 8, 12-15）">
+                
+                <div class="input-group">
+                    <div>
+                        <label class="input-label">题目数量</label>
+                        <input type="number" class="input-field" id="total1" min="0" step="1" placeholder="共几题">
+                    </div>
+                    <div>
+                        <label class="input-label">正确数量</label>
+                        <input type="number" class="input-field" id="correct1" min="0" step="1" placeholder="答对几题">
+                    </div>
+                    <div>
+                        <label class="input-label">自动评分 (0-20)</label>
+                        <div class="auto-score-field" id="score1">--</div>
+                    </div>
+                </div>
+                <div class="score-display" id="display1">正确率: 0% | 评分: 0</div>
+            </div>
+
+            <!-- 维度2 -->
+            <div class="dimension-card" id="dimension2">
+                <div class="dimension-header">
+                    <div class="dimension-icon">
+                        <i class="fas fa-cube"></i>
+                    </div>
+                    <h3 class="dimension-title">2. 空间几何与积木操作能力</h3>
+                </div>
+                <p class="dimension-description">拼图、立体搭建、图形重组、方位</p>
+                
+                <input type="text" class="question-sequence-input" placeholder="请输入题目序号（例如：1-5, 8, 12-15）">
+                
+                <div class="input-group">
+                    <div>
+                        <label class="input-label">题目数量</label>
+                        <input type="number" class="input-field" id="total2" min="0" step="1" placeholder="共几题">
+                    </div>
+                    <div>
+                        <label class="input-label">正确数量</label>
+                        <input type="number" class="input-field" id="correct2" min="0" step="1" placeholder="答对几题">
+                    </div>
+                    <div>
+                        <label class="input-label">自动评分 (0-20)</label>
+                        <div class="auto-score-field" id="score2">--</div>
+                    </div>
+                </div>
+                <div class="score-display" id="display2">正确率: 0% | 评分: 0</div>
+            </div>
+
+            <!-- 维度3 -->
+            <div class="dimension-card" id="dimension3">
+                <div class="dimension-header">
+                    <div class="dimension-icon">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <h3 class="dimension-title">3. 观察辨识与细节捕捉能力</h3>
+                </div>
+                <p class="dimension-description"></p>
+                
+                <input type="text" class="question-sequence-input" placeholder="请输入题目序号（例如：1-5, 8, 12-15）">
+                
+                <div class="input-group">
+                    <div>
+                        <label class="input-label">题目数量</label>
+                        <input type="number" class="input-field" id="total3" min="0" step="1" placeholder="共几题">
+                    </div>
+                    <div>
+                        <label class="input-label">正确数量</label>
+                        <input type="number" class="input-field" id="correct3" min="0" step="1" placeholder="答对几题">
+                    </div>
+                    <div>
+                        <label class="input-label">自动评分 (0-20)</label>
+                        <div class="auto-score-field" id="score3">--</div>
+                    </div>
+                </div>
+                <div class="score-display" id="display3">正确率: 0% | 评分: 0</div>
+            </div>
+
+            <!-- 维度4 -->
+            <div class="dimension-card" id="dimension4">
+                <div class="dimension-header">
+                    <div class="dimension-icon">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <h3 class="dimension-title">4. 逻辑推理、规律与排序能力</h3>
+                </div>
+                <p class="dimension-description"></p>
+                
+                <input type="text" class="question-sequence-input" placeholder="请输入题目序号（例如：1-5, 8, 12-15）">
+                
+                <div class="input-group">
+                    <div>
+                        <label class="input-label">题目数量</label>
+                        <input type="number" class="input-field" id="total4" min="0" step="1" placeholder="共几题">
+                    </div>
+                    <div>
+                        <label class="input-label">正确数量</label>
+                        <input type="number" class="input-field" id="correct4" min="0" step="1" placeholder="答对几题">
+                    </div>
+                    <div>
+                        <label class="input-label">自动评分 (0-20)</label>
+                        <div class="auto-score-field" id="score4">--</div>
+                    </div>
+                </div>
+                <div class="score-display" id="display4">正确率: 0% | 评分: 0</div>
+            </div>
+
+            <!-- 维度5 -->
+            <div class="dimension-card" id="dimension5">
+                <div class="dimension-header">
+                    <div class="dimension-icon">
+                        <i class="fas fa-shopping-cart"></i>
+                    </div>
+                    <h3 class="dimension-title">5. 生活场景数学应用能力</h3>
+                </div>
+                <p class="dimension-description"></p>
+                
+                <input type="text" class="question-sequence-input" placeholder="请输入题目序号（例如：1-5, 8, 12-15）">
+                
+                <div class="input-group">
+                    <div>
+                        <label class="input-label">题目数量</label>
+                        <input type="number" class="input-field" id="total5" min="0" step="1" placeholder="共几题">
+                    </div>
+                    <div>
+                        <label class="input-label">正确数量</label>
+                        <input type="number" class="input-field" id="correct5" min="0" step="1" placeholder="答对几题">
+                    </div>
+                    <div>
+                        <label class="input-label">自动评分 (0-20)</label>
+                        <div class="auto-score-field" id="score5">--</div>
+                    </div>
+                </div>
+                <div class="score-display" id="display5">正确率: 0% | 评分: 0</div>
+            </div>
+
+            <!-- 维度6 -->
+            <div class="dimension-card" id="dimension6">
+                <div class="dimension-header">
+                    <div class="dimension-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <h3 class="dimension-title">6. 专注力、读题理解与数学学习习惯</h3>
+                </div>
+                <p class="dimension-description"></p>
+                
+                <input type="text" class="question-sequence-input" placeholder="请输入题目序号（例如：1-5, 8, 12-15）">
+                
+                <div class="input-group">
+                    <div>
+                        <label class="input-label">题目数量</label>
+                        <input type="number" class="input-field" id="total6" min="0" step="1" placeholder="共几题">
+                    </div>
+                    <div>
+                        <label class="input-label">正确数量</label>
+                        <input type="number" class="input-field" id="correct6" min="0" step="1" placeholder="答对几题">
+                    </div>
+                    <div>
+                        <label class="input-label">自动评分 (0-20)</label>
+                        <div class="auto-score-field" id="score6">--</div>
+                    </div>
+                </div>
+                <div class="score-display" id="display6">正确率: 0% | 评分: 0</div>
+            </div>
+        </div>
+
+        <div class="total-section">
+            <div class="total-header">
+                <h2><i class="fas fa-chart-line"></i> 综合能力总评</h2>
+                <p>基于六大维度得分自动计算，科学评估孩子数学能力水平</p>
+            </div>
+            
+            <div class="total-stats">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalScore">0</div>
+                    <div class="stat-label">综合总成绩</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="averageScore">0</div>
+                    <div class="stat-label">平均得分</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="averageAccuracy">0%</div>
+                    <div class="stat-label">综合正确率</div>
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin-top: 20px;">
+                <div class="level-display" id="levelDisplay">等级: 未评估</div>
+            </div>
+        </div>
+
+        <div class="chart-section">
+            <div class="total-header">
+                <h2><i class="fas fa-chart-radar"></i> 能力维度雷达图</h2>
+                <p>直观展示六大数学能力的分布情况</p>
+            </div>
+            
+            <div class="chart-container">
+                <canvas id="radarChart"></canvas>
+            </div>
+            
+            <div class="chart-actions">
+                <button class="chart-btn" id="saveDataBtn">
+                    <i class="fas fa-save"></i> 保存数据
+                </button>
+                <button class="chart-btn" id="loadDataBtn">
+                    <i class="fas fa-folder-open"></i> 加载数据
+                </button>
+                <button class="chart-btn" id="resetDataBtn">
+                    <i class="fas fa-redo"></i> 重置数据
+                </button>
+                <button class="chart-btn" id="exampleDataBtn">
+                    <i class="fas fa-magic"></i> 示例数据
+                </button>
+                <button class="chart-btn" id="exportReportBtn">
+                    <i class="fas fa-file-export"></i> 导出报告
+                </button>
+            </div>
+        </div>
+
+        <div class="evaluation-section">
+            <div class="evaluation-header">
+                <h2><i class="fas fa-robot"></i> 智能能力分析报告</h2>
+                <p>基于测评数据生成个性化评估与提升建议</p>
+            </div>
+            
+            <div class="evaluation-content">
+                <div class="evaluation-category">
+                    <div class="category-title">
+                        <div class="category-icon" style="background: linear-gradient(135deg, #10b981, #059669);">
+                            <i class="fas fa-trophy"></i>
+                        </div>
+                        <h3 class="category-name">优势项分析</h3>
+                    </div>
+                    <div class="category-content" id="strengths">
+                        <p>请填写各维度分数后生成分析报告...</p>
+                    </div>
+                </div>
+                
+                <div class="evaluation-category">
+                    <div class="category-title">
+                        <div class="category-icon" style="background: linear-gradient(135deg, #ef4444, #dc2626);">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <h3 class="category-name">薄弱项识别</h3>
+                    </div>
+                    <div class="category-content" id="weaknesses">
+                        <p>请填写各维度分数后生成分析报告...</p>
+                    </div>
+                </div>
+                
+                <div class="evaluation-category">
+                    <div class="category-title">
+                        <div class="category-icon" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8);">
+                            <i class="fas fa-lightbulb"></i>
+                        </div>
+                        <h3 class="category-name">个性化提升建议</h3>
+                    </div>
+                    <div class="category-content" id="suggestions">
+                        <p>请填写各维度分数后生成分析报告...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <button class="btn-generate" id="generateBtn">
+                <i class="fas fa-magic"></i> 生成智能分析报告
+            </button>
+        </div>
+
+        <div class="footer">
+            <p>© 2023 儿童数学能力测评系统 | 专业评估 · 科学分析 · 助力成长</p>
+            <p style="margin-top: 10px; font-size: 0.9rem; color: #64748b;">
+                提示：请根据孩子实际表现如实填写各维度数据，以获得准确的分析报告
+            </p>
+            <div style="margin-top: 25px;">
+                <button class="btn-pdf" id="exportPdfBtn">
+                    <i class="fas fa-file-pdf"></i> 一键导出PDF报告
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 维度数据
+        const dimensions = [
+            { id: 1, name: "数感与运算能力", key: "calculation" },
+            { id: 2, name: "空间几何与积木操作能力", key: "spatial" },
+            { id: 3, name: "观察辨识与细节捕捉能力", key: "observation" },
+            { id: 4, name: "逻辑推理、规律与排序能力", key: "logic" },
+            { id: 5, name: "生活场景数学应用能力", key: "application" },
+            { id: 6, name: "专注力、读题理解与数学学习习惯", key: "focus" }
+        ];
+
+        // ========== 工具函数 ==========
+        // 获取某维度的题目数量
+        function getTotal(id) {
+            return parseInt(document.getElementById(`total${id}`).value) || 0;
+        }
+        // 获取某维度的正确数量
+        function getCorrect(id) {
+            return parseInt(document.getElementById(`correct${id}`).value) || 0;
+        }
+        // 计算某维度的自动评分 (0-20)，正确数量/题目数量 * 20，四舍五入
+        function calcScore(id) {
+            const total = getTotal(id);
+            const correct = getCorrect(id);
+            if (total <= 0) return 0;
+            const clampedCorrect = Math.min(correct, total); // 防止正确数大于总数
+            return Math.round((clampedCorrect / total) * 20);
+        }
+        // 计算某维度的正确率 (%)
+        function calcAccuracy(id) {
+            const total = getTotal(id);
+            const correct = getCorrect(id);
+            if (total <= 0) return 0;
+            const clampedCorrect = Math.min(correct, total);
+            return Math.round((clampedCorrect / total) * 100);
+        }
+        // 获取某维度的当前自动评分
+        function getScore(id) {
+            const el = document.getElementById(`score${id}`);
+            return parseInt(el.textContent) || 0;
+        }
+
+        // ========== 初始化 ==========
+        document.addEventListener('DOMContentLoaded', function() {
+            // 为所有输入框添加事件监听
+            dimensions.forEach(dim => {
+                const totalInput = document.getElementById(`total${dim.id}`);
+                const correctInput = document.getElementById(`correct${dim.id}`);
+
+                const updateDimension = () => {
+                    // 自动计算评分
+                    const score = calcScore(dim.id);
+                    const accuracy = calcAccuracy(dim.id);
+                    document.getElementById(`score${dim.id}`).textContent = score > 0 ? score : '--';
+                    // 更新底部显示
+                    document.getElementById(`display${dim.id}`).textContent =
+                        `正确率: ${accuracy}% | 评分: ${score}`;
+                    // 重新计算总分和图表
+                    calculateTotals();
+                };
+
+                totalInput.addEventListener('input', updateDimension);
+                correctInput.addEventListener('input', updateDimension);
+            });
+
+            // 绑定按钮
+            document.getElementById('generateBtn').addEventListener('click', generateEvaluation);
+            document.getElementById('saveDataBtn').addEventListener('click', saveData);
+            document.getElementById('loadDataBtn').addEventListener('click', loadData);
+            document.getElementById('resetDataBtn').addEventListener('click', resetData);
+            document.getElementById('exampleDataBtn').addEventListener('click', loadExampleData);
+            document.getElementById('exportReportBtn').addEventListener('click', exportReport);
+            document.getElementById('exportPdfBtn').addEventListener('click', exportPdf);
+
+            // 初始计算和图表
+            calculateTotals();
+            initChart();
+            loadSavedData();
+        });
+
+        // ========== 计算总分和评级 ==========
+        function calculateTotals() {
+            let totalScore = 0;
+            let totalQuestions = 0;
+            let totalCorrect = 0;
+            let validDims = 0;
+
+            dimensions.forEach(dim => {
+                const score = calcScore(dim.id);
+                if (score > 0) {
+                    totalScore += score;
+                    validDims++;
+                }
+                totalQuestions += getTotal(dim.id);
+                totalCorrect += Math.min(getCorrect(dim.id), getTotal(dim.id));
+            });
+
+            const averageScore = validDims > 0 ? (totalScore / validDims).toFixed(1) : 0;
+            const overallAccuracy = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
+
+            document.getElementById('totalScore').textContent = totalScore;
+            document.getElementById('averageScore').textContent = averageScore;
+            document.getElementById('averageAccuracy').textContent = `${overallAccuracy}%`;
+
+            updateLevel(totalScore);
+            if (typeof updateChart === 'function') updateChart();
+        }
+
+        // ========== 更新等级 ==========
+        function updateLevel(totalScore) {
+            let level = "";
+            let color = "";
+            if (totalScore >= 100) { level = "卓越级"; color = "#10b981"; }
+            else if (totalScore >= 80) { level = "优秀级"; color = "#3b82f6"; }
+            else if (totalScore >= 60) { level = "良好级"; color = "#f59e0b"; }
+            else if (totalScore >= 40) { level = "基础级"; color = "#ef4444"; }
+            else { level = "待提升"; color = "#dc2626"; }
+
+            const levelDisplay = document.getElementById('levelDisplay');
+            levelDisplay.textContent = `等级: ${level}`;
+            levelDisplay.style.background = `linear-gradient(135deg, ${color}, ${color}70)`;
+        }
+
+        // ========== 生成智能评价 ==========
+        function generateEvaluation() {
+            const scores = dimensions.map(dim => ({
+                name: dim.name,
+                score: calcScore(dim.id),
+                accuracy: calcAccuracy(dim.id),
+                total: getTotal(dim.id),
+                correct: Math.min(getCorrect(dim.id), getTotal(dim.id))
+            }));
+
+            calculateTotals();
+            const totalScore = parseInt(document.getElementById('totalScore').textContent);
+
+            const sortedScores = [...scores].sort((a, b) => b.score - a.score);
+            const strengths = sortedScores.slice(0, 2);
+            const weaknesses = sortedScores.slice(-2);
+
+            // 优势项
+            let strengthsHTML = "";
+            strengths.forEach(item => {
+                if (item.score > 0) {
+                    strengthsHTML += `<p><strong>${item.name}:</strong> 答对${item.correct}/${item.total}题，正确率${item.accuracy}%，评分${item.score}。表现突出，具备良好的能力基础。</p>`;
+                }
+            });
+            if (!strengthsHTML) strengthsHTML = "<p>请填写各维度数据以获得准确的优势项分析。</p>";
+            document.getElementById('strengths').innerHTML = strengthsHTML;
+
+            // 薄弱项
+            let weaknessesHTML = "";
+            weaknesses.forEach(item => {
+                if (item.score < 14) {
+                    weaknessesHTML += `<p><strong>${item.name}:</strong> 答对${item.correct}/${item.total}题，正确率${item.accuracy}%，评分${item.score}。需要重点加强练习。</p>`;
+                }
+            });
+            if (!weaknessesHTML) weaknessesHTML = "<p>请填写各维度数据以获得准确的薄弱项分析。</p>";
+            document.getElementById('weaknesses').innerHTML = weaknessesHTML;
+
+            // 个性化建议
+            let suggestionsHTML = "";
+            if (totalScore >= 100) {
+                suggestionsHTML += `<p><strong>总体评价：</strong>孩子数学能力全面优秀，建议继续保持并挑战更高难度的数学思维训练。</p>`;
+            } else if (totalScore >= 80) {
+                suggestionsHTML += `<p><strong>总体评价：</strong>孩子数学能力良好，在个别领域有进一步提升空间。</p>`;
+            } else if (totalScore >= 60) {
+                suggestionsHTML += `<p><strong>总体评价：</strong>孩子具备基础数学能力，需要在多个方面进行系统性提升。</p>`;
+            } else {
+                suggestionsHTML += `<p><strong>总体评价：</strong>孩子数学能力需要重点关注和系统训练。</p>`;
+            }
+
+            weaknesses.forEach(item => {
+                if (item.score < 14) {
+                    switch(item.name) {
+                        case "数感与运算能力":
+                            suggestionsHTML += `<p><strong>${item.name}提升：</strong>推荐使用袋鼠数学APP进行每日数感训练，重点练习快速计算和数量推理。</p>`;
+                            break;
+                        case "空间几何与积木操作能力":
+                            suggestionsHTML += `<p><strong>${item.name}提升：</strong>建议购买立体积木套装，每天进行15分钟的空间搭建练习，配合图形拼图游戏。</p>`;
+                            break;
+                        case "观察辨识与细节捕捉能力":
+                            suggestionsHTML += `<p><strong>${item.name}提升：</strong>使用"找不同"、"细节观察"类游戏训练，每次10-15分钟。</p>`;
+                            break;
+                        case "逻辑推理、规律与排序能力":
+                            suggestionsHTML += `<p><strong>${item.name}提升：</strong>推荐逻辑狗、数独等逻辑训练工具，培养规律发现能力。</p>`;
+                            break;
+                        case "生活场景数学应用能力":
+                            suggestionsHTML += `<p><strong>${item.name}提升：</strong>生活中多创设数学应用场景，如购物计算、时间管理等。</p>`;
+                            break;
+                        case "专注力、读题理解与数学学习习惯":
+                            suggestionsHTML += `<p><strong>${item.name}提升：</strong>建立定时学习习惯，使用番茄钟法，每次学习25分钟休息5分钟。</p>`;
+                            break;
+                    }
+                }
+            });
+
+            strengths.forEach(item => {
+                if (item.score >= 18) {
+                    suggestionsHTML += `<p><strong>${item.name}加强：</strong>此方面表现优异，可进一步挑战更高难度的专项训练，培养数学兴趣。</p>`;
+                }
+            });
+
+            suggestionsHTML += `<p><strong>训练方案：</strong>建议每周进行3-4次专项训练，每次30分钟，注意保持训练趣味性。</p>`;
+            suggestionsHTML += `<p><strong>家长指导：</strong>多鼓励少批评，关注进步过程而非结果，与孩子一起发现数学的乐趣。</p>`;
+
+            document.getElementById('suggestions').innerHTML = suggestionsHTML;
+
+            const evaluationContent = document.querySelector('.evaluation-content');
+            evaluationContent.classList.add('glow');
+            setTimeout(() => evaluationContent.classList.remove('glow'), 2000);
+
+            document.getElementById('generateBtn').innerHTML = '<i class="fas fa-sync-alt"></i> 重新生成分析报告';
+        }
+
+        // ========== 雷达图 ==========
+        let radarChart = null;
+
+        function initChart() {
+            const ctx = document.getElementById('radarChart').getContext('2d');
+            if (radarChart) radarChart.destroy();
+
+            const scores = dimensions.map(dim => calcScore(dim.id));
+            const labels = dimensions.map(dim => {
+                const shortName = dim.name.replace(/能力/g, '').replace(/与/g, '/');
+                return shortName.length > 6 ? shortName.substring(0, 6) : shortName;
+            });
+
+            radarChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '能力得分',
+                        data: scores,
+                        backgroundColor: 'rgba(56, 189, 248, 0.2)',
+                        borderColor: 'rgba(56, 189, 248, 0.8)',
+                        borderWidth: 2,
+                        pointBackgroundColor: 'rgba(56, 189, 248, 1)',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 6,
+                        pointHoverRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            max: 20,
+                            min: 0,
+                            ticks: { stepSize: 5, backdropColor: 'transparent', color: '#94a3b8' },
+                            angleLines: { color: 'rgba(148, 163, 184, 0.2)' },
+                            grid: { color: 'rgba(148, 163, 184, 0.1)' },
+                            pointLabels: { color: '#e2e8f0', font: { size: 14 } }
+                        }
+                    },
+                    plugins: {
+                        legend: { labels: { color: '#94a3b8', font: { size: 14 } } }
+                    }
+                }
+            });
+        }
+
+        function updateChart() {
+            if (radarChart) {
+                radarChart.data.datasets[0].data = dimensions.map(dim => calcScore(dim.id));
+                radarChart.update();
+            }
+        }
+
+        // ========== 数据持久化 ==========
+        function saveData() {
+            const data = {};
+            dimensions.forEach(dim => {
+                data[`total${dim.id}`] = document.getElementById(`total${dim.id}`).value || '';
+                data[`correct${dim.id}`] = document.getElementById(`correct${dim.id}`).value || '';
+                const questionInput = document.querySelector(`#dimension${dim.id} .question-sequence-input`);
+                if (questionInput) data[`question${dim.id}`] = questionInput.value || '';
+            });
+            localStorage.setItem('mathAssessmentData', JSON.stringify(data));
+            alert('数据已保存到本地存储！下次打开页面时会自动加载。');
+        }
+
+        function loadSavedData() {
+            const saved = localStorage.getItem('mathAssessmentData');
+            if (!saved) return;
+            const data = JSON.parse(saved);
+
+            dimensions.forEach(dim => {
+                if (data[`total${dim.id}`]) document.getElementById(`total${dim.id}`).value = data[`total${dim.id}`];
+                if (data[`correct${dim.id}`]) document.getElementById(`correct${dim.id}`).value = data[`correct${dim.id}`];
+                const questionInput = document.querySelector(`#dimension${dim.id} .question-sequence-input`);
+                if (questionInput && data[`question${dim.id}`]) questionInput.value = data[`question${dim.id}`];
+
+                // 触发自动评分
+                const score = calcScore(dim.id);
+                const accuracy = calcAccuracy(dim.id);
+                document.getElementById(`score${dim.id}`).textContent = score > 0 ? score : '--';
+                document.getElementById(`display${dim.id}`).textContent = `正确率: ${accuracy}% | 评分: ${score}`;
+            });
+
+            calculateTotals();
+            updateChart();
+        }
+
+        function loadData() {
+            loadSavedData();
+            alert('已加载上次保存的数据！');
+        }
+
+        function resetData() {
+            if (confirm('确定要重置所有数据吗？这将清除所有输入框的内容。')) {
+                dimensions.forEach(dim => {
+                    document.getElementById(`total${dim.id}`).value = '';
+                    document.getElementById(`correct${dim.id}`).value = '';
+                    document.getElementById(`score${dim.id}`).textContent = '--';
+                    document.getElementById(`display${dim.id}`).textContent = '正确率: 0% | 评分: 0';
+                    const questionInput = document.querySelector(`#dimension${dim.id} .question-sequence-input`);
+                    if (questionInput) questionInput.value = '';
+                });
+                calculateTotals();
+                updateChart();
+                localStorage.removeItem('mathAssessmentData');
+                document.getElementById('strengths').innerHTML = '<p>请填写各维度数据后生成分析报告...</p>';
+                document.getElementById('weaknesses').innerHTML = '<p>请填写各维度数据后生成分析报告...</p>';
+                document.getElementById('suggestions').innerHTML = '<p>请填写各维度数据后生成分析报告...</p>';
+                document.getElementById('generateBtn').innerHTML = '<i class="fas fa-magic"></i> 生成智能分析报告';
+            }
+        }
+
+        function loadExampleData() {
+            if (confirm('将加载示例数据，这会覆盖当前数据。确定要继续吗？')) {
+                const exampleTotals =   [10, 8, 10, 8, 10, 8];
+                const exampleCorrects = [9,  6, 8,  5, 7,  5];
+                const exampleQuestions = ['1-5, 7-9', '2, 4, 6, 8', '3, 5, 7, 9', '1, 4, 7, 10', '2, 5, 8, 11', '3, 6, 9, 12'];
+
+                dimensions.forEach((dim, index) => {
+                    document.getElementById(`total${dim.id}`).value = exampleTotals[index];
+                    document.getElementById(`correct${dim.id}`).value = exampleCorrects[index];
+
+                    const score = calcScore(dim.id);
+                    const accuracy = calcAccuracy(dim.id);
+                    document.getElementById(`score${dim.id}`).textContent = score;
+                    document.getElementById(`display${dim.id}`).textContent = `正确率: ${accuracy}% | 评分: ${score}`;
+
+                    const questionInput = document.querySelector(`#dimension${dim.id} .question-sequence-input`);
+                    if (questionInput) questionInput.value = exampleQuestions[index];
+                });
+
+                calculateTotals();
+                updateChart();
+                generateEvaluation();
+            }
+        }
+
+        // ========== 导出文本报告 ==========
+        function exportReport() {
+            let report = '儿童数学能力测评报告\n';
+            report += '========================\n\n';
+            report += `评估时间: ${new Date().toLocaleString('zh-CN')}\n\n`;
+
+            report += '各维度得分情况:\n';
+            dimensions.forEach(dim => {
+                const total = getTotal(dim.id);
+                const correct = Math.min(getCorrect(dim.id), total);
+                const score = calcScore(dim.id);
+                const accuracy = calcAccuracy(dim.id);
+                report += `${dim.name}: ${correct}/${total}题 (正确率: ${accuracy}%, 评分: ${score})\n`;
+            });
+
+            const totalScore = parseInt(document.getElementById('totalScore').textContent) || 0;
+            const averageScore = document.getElementById('averageScore').textContent;
+            const averageAccuracy = document.getElementById('averageAccuracy').textContent;
+            const level = document.getElementById('levelDisplay').textContent.replace('等级: ', '');
+
+            report += `\n综合总成绩: ${totalScore}分\n`;
+            report += `平均得分: ${averageScore}分\n`;
+            report += `综合正确率: ${averageAccuracy}\n`;
+            report += `能力等级: ${level}\n\n`;
+
+            report += '能力分析:\n';
+            report += document.getElementById('strengths').innerText + '\n';
+            report += document.getElementById('weaknesses').innerText + '\n';
+            report += document.getElementById('suggestions').innerText + '\n';
+
+            const blob = new Blob([report], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `数学能力测评报告_${new Date().toISOString().slice(0, 10)}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            alert('报告已导出为文本文件！');
+        }
+
+        // ========== 一键导出PDF ==========
+        // 生成白底A4版HTML内容
+        function buildPdfHtml() {
+            calculateTotals();
+            const totalScore = document.getElementById('totalScore').textContent;
+            const averageScore = document.getElementById('averageScore').textContent;
+            const averageAccuracy = document.getElementById('averageAccuracy').textContent;
+            const level = document.getElementById('levelDisplay').textContent.replace('等级: ', '');
+            const strengths = document.getElementById('strengths').innerHTML;
+            const weaknesses = document.getElementById('weaknesses').innerHTML;
+            const suggestions = document.getElementById('suggestions').innerHTML;
+
+            // 获取雷达图图片
+            const chartCanvas = document.getElementById('radarChart');
+            const chartImage = chartCanvas ? chartCanvas.toDataURL('image/png') : '';
+
+            // 等级颜色
+            let levelColor = '#dc2626';
+            if (totalScore >= 100) levelColor = '#10b981';
+            else if (totalScore >= 80) levelColor = '#3b82f6';
+            else if (totalScore >= 60) levelColor = '#f59e0b';
+            else if (totalScore >= 40) levelColor = '#ef4444';
+
+            let dimRows = '';
+            dimensions.forEach((dim, i) => {
+                const total = getTotal(dim.id);
+                const correct = Math.min(getCorrect(dim.id), total);
+                const score = calcScore(dim.id);
+                const accuracy = calcAccuracy(dim.id);
+                const questionEl = document.querySelector(`#dimension${dim.id} .question-sequence-input`);
+                const questions = questionEl ? questionEl.value : '';
+                const scoreBarW = total > 0 ? Math.round((correct / total) * 100) : 0;
+                const barColor = score >= 16 ? '#10b981' : score >= 10 ? '#f59e0b' : '#ef4444';
+
+                dimRows += `
+                <tr>
+                    <td style="padding:10px 12px; border-bottom:1px solid #e5e7eb; font-weight:600; color:#1e293b; width:180px;">
+                        ${i+1}. ${dim.name}
+                    </td>
+                    <td style="padding:10px 12px; border-bottom:1px solid #e5e7eb; text-align:center; color:#64748b; font-size:0.9rem;">
+                        ${questions || '-'}
+                    </td>
+                    <td style="padding:10px 12px; border-bottom:1px solid #e5e7eb; text-align:center; color:#475569;">
+                        ${total > 0 ? total : '-'}
+                    </td>
+                    <td style="padding:10px 12px; border-bottom:1px solid #e5e7eb; text-align:center; color:#475569;">
+                        ${total > 0 ? correct : '-'}
+                    </td>
+                    <td style="padding:10px 12px; border-bottom:1px solid #e5e7eb; text-align:center; color:#475569;">
+                        ${total > 0 ? accuracy + '%' : '-'}
+                    </td>
+                    <td style="padding:10px 12px; border-bottom:1px solid #e5e7eb; text-align:center;">
+                        <span style="display:inline-block; background:${barColor}15; color:${barColor}; font-weight:800; font-size:1.1rem; padding:4px 14px; border-radius:6px;">${total > 0 ? score : '-'}</span>
+                    </td>
+                    <td style="padding:10px 12px; border-bottom:1px solid #e5e7eb; width:100px;">
+                        <div style="background:#f1f5f9; border-radius:4px; height:10px; overflow:hidden;">
+                            <div style="background:${barColor}; height:100%; width:${scoreBarW}%; border-radius:4px;"></div>
+                        </div>
+                    </td>
+                </tr>`;
+            });
+
+            // 清理HTML中的标签为纯文本样式
+            function stripTagAttrs(html) {
+                return html.replace(/<p>/g, '<p style="margin:6px 0;line-height:1.7;color:#334155;">')
+                           .replace(/<strong>/g, '<strong style="color:#1e293b;">');
+            }
+
+            return `
+            <div style="font-family:'Microsoft YaHei','Segoe UI',sans-serif; color:#1e293b; line-height:1.6; padding:0;">
+                <!-- 标题 -->
+                <div style="text-align:center; margin-bottom:24px; padding-bottom:16px; border-bottom:3px solid #3b82f6;">
+                    <h1 style="font-size:1.8rem; color:#1e293b; margin:0 0 6px;">儿童数学能力综合测评报告</h1>
+                    <p style="color:#64748b; font-size:0.95rem; margin:0;">评估时间：${new Date().toLocaleString('zh-CN')}</p>
+                </div>
+
+                <!-- 维度评分表 -->
+                <h2 style="font-size:1.2rem; color:#3b82f6; margin:20px 0 10px; padding-left:8px; border-left:4px solid #3b82f6;">六大维度测评明细</h2>
+                <table style="width:100%; border-collapse:collapse; font-size:0.9rem; margin-bottom:20px;">
+                    <thead>
+                        <tr style="background:#f8fafc;">
+                            <th style="padding:10px 12px; border-bottom:2px solid #cbd5e1; text-align:left; color:#475569;">测评维度</th>
+                            <th style="padding:10px 12px; border-bottom:2px solid #cbd5e1; text-align:center; color:#475569;">题目序号</th>
+                            <th style="padding:10px 12px; border-bottom:2px solid #cbd5e1; text-align:center; color:#475569;">题目数</th>
+                            <th style="padding:10px 12px; border-bottom:2px solid #cbd5e1; text-align:center; color:#475569;">正确数</th>
+                            <th style="padding:10px 12px; border-bottom:2px solid #cbd5e1; text-align:center; color:#475569;">正确率</th>
+                            <th style="padding:10px 12px; border-bottom:2px solid #cbd5e1; text-align:center; color:#475569;">评分</th>
+                            <th style="padding:10px 12px; border-bottom:2px solid #cbd5e1; text-align:center; color:#475569;">进度</th>
+                        </tr>
+                    </thead>
+                    <tbody>${dimRows}</tbody>
+                    <tfoot>
+                        <tr style="background:#f8fafc; font-weight:700;">
+                            <td style="padding:10px 12px; border-top:2px solid #cbd5e1; color:#1e293b;" colspan="2">合计</td>
+                            <td style="padding:10px 12px; border-top:2px solid #cbd5e1; text-align:center; color:#1e293b;">${totalScore}</td>
+                            <td style="padding:10px 12px; border-top:2px solid #cbd5e1;"></td>
+                            <td style="padding:10px 12px; border-top:2px solid #cbd5e1; text-align:center; color:#1e293b;">${averageAccuracy}</td>
+                            <td style="padding:10px 12px; border-top:2px solid #cbd5e1; text-align:center;">
+                                <span style="background:${levelColor}15; color:${levelColor}; font-weight:800; font-size:1.1rem; padding:4px 14px; border-radius:6px;">${totalScore}</span>
+                            </td>
+                            <td style="padding:10px 12px; border-top:2px solid #cbd5e1;"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+
+                <!-- 综合评定 -->
+                <h2 style="font-size:1.2rem; color:#3b82f6; margin:20px 0 10px; padding-left:8px; border-left:4px solid #3b82f6;">综合能力评定</h2>
+                <div style="display:flex; gap:16px; margin-bottom:20px;">
+                    <div style="flex:1; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:14px; text-align:center;">
+                        <div style="font-size:2rem; font-weight:800; color:#3b82f6;">${totalScore}</div>
+                        <div style="color:#64748b; font-size:0.85rem;">综合总成绩</div>
+                    </div>
+                    <div style="flex:1; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:14px; text-align:center;">
+                        <div style="font-size:2rem; font-weight:800; color:#8b5cf6;">${averageScore}</div>
+                        <div style="color:#64748b; font-size:0.85rem;">平均得分</div>
+                    </div>
+                    <div style="flex:1; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:14px; text-align:center;">
+                        <div style="font-size:2rem; font-weight:800; color:#f59e0b;">${averageAccuracy}</div>
+                        <div style="color:#64748b; font-size:0.85rem;">综合正确率</div>
+                    </div>
+                    <div style="flex:1; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:14px; text-align:center;">
+                        <div style="font-size:2rem; font-weight:800; color:${levelColor};">${level}</div>
+                        <div style="color:#64748b; font-size:0.85rem;">能力等级</div>
+                    </div>
+                </div>
+
+                <!-- 雷达图 -->
+                ${chartImage ? `
+                <h2 style="font-size:1.2rem; color:#3b82f6; margin:20px 0 10px; padding-left:8px; border-left:4px solid #3b82f6;">能力维度雷达图</h2>
+                <div style="text-align:center; margin-bottom:20px;">
+                    <img src="${chartImage}" style="max-width:380px; max-height:300px;" />
+                </div>` : ''}
+
+                <!-- 智能分析 -->
+                <h2 style="font-size:1.2rem; color:#3b82f6; margin:20px 0 10px; padding-left:8px; border-left:4px solid #3b82f6;">智能能力分析</h2>
+                <div style="margin-bottom:14px;">
+                    <h3 style="font-size:1rem; color:#10b981; margin:0 0 6px;">✅ 优势项分析</h3>
+                    <div style="padding-left:16px;">${stripTagAttrs(strengths)}</div>
+                </div>
+                <div style="margin-bottom:14px;">
+                    <h3 style="font-size:1rem; color:#ef4444; margin:0 0 6px;">⚠️ 薄弱项识别</h3>
+                    <div style="padding-left:16px;">${stripTagAttrs(weaknesses)}</div>
+                </div>
+                <div style="margin-bottom:14px;">
+                    <h3 style="font-size:1rem; color:#3b82f6; margin:0 0 6px;">💡 个性化提升建议</h3>
+                    <div style="padding-left:16px;">${stripTagAttrs(suggestions)}</div>
+                </div>
+
+                <!-- 页脚 -->
+                <div style="margin-top:30px; padding-top:12px; border-top:1px solid #e2e8f0; text-align:center; color:#94a3b8; font-size:0.8rem;">
+                    儿童数学能力综合测评系统 | 专业评估 · 科学分析 · 助力成长 | ${new Date().toLocaleDateString('zh-CN')}
+                </div>
+            </div>`;
+        }
+
+        let pdfConfirmHandler = null;
+        let pdfCancelHandler = null;
+
+        function exportPdf() {
+            const btn = document.getElementById('exportPdfBtn');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 正在生成预览...';
+            btn.disabled = true;
+
+            // 生成PDF专用HTML
+            const pdfHtml = buildPdfHtml();
+
+            // 填入预览区
+            const previewContent = document.getElementById('pdfPreviewContent');
+            previewContent.innerHTML = pdfHtml;
+
+            // 显示预览弹窗
+            const modal = document.getElementById('pdfPreviewModal');
+            modal.style.display = 'block';
+
+            // 移除旧事件
+            const confirmBtn = document.getElementById('pdfConfirmBtn');
+            const cancelBtn = document.getElementById('pdfCancelBtn');
+            if (pdfConfirmHandler) confirmBtn.removeEventListener('click', pdfConfirmHandler);
+            if (pdfCancelHandler) cancelBtn.removeEventListener('click', pdfCancelHandler);
+
+            // 确认导出
+            pdfConfirmHandler = async function() {
+                confirmBtn.innerHTML = '导出中...';
+                confirmBtn.disabled = true;
+                try {
+                    const { jsPDF } = window.jspdf;
+                    const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+                    const pageW = pdf.internal.pageSize.getWidth();
+                    const pageH = pdf.internal.pageSize.getHeight();
+                    const margin = 12;
+                    const contentW = pageW - margin * 2;
+
+                    // 创建隐藏渲染容器
+                    const renderDiv = document.createElement('div');
+                    renderDiv.style.cssText = `position:fixed; left:-9999px; top:0; width:${contentW * 3.78}px; background:#fff; padding:0; font-family:'Microsoft YaHei','Segoe UI',sans-serif;`;
+                    renderDiv.innerHTML = pdfHtml;
+                    document.body.appendChild(renderDiv);
+
+                    // 逐段渲染：按子区域分页截图
+                    const sections = renderDiv.children[0].children;
+                    let yOffset = 0;
+
+                    // 整体截图方式——先截完整内容再分页
+                    const fullCanvas = await html2canvas(renderDiv, {
+                        scale: 2,
+                        useCORS: true,
+                        logging: false,
+                        backgroundColor: '#ffffff',
+                        windowWidth: contentW * 3.78
+                    });
+
+                    document.body.removeChild(renderDiv);
+
+                    // 计算分页
+                    const imgW = contentW;
+                    const imgH = (fullCanvas.height * imgW) / fullCanvas.width;
+                    const pageContentH = pageH - margin * 2;
+                    let remainingH = imgH;
+                    let currentY = 0;
+                    let pageNum = 0;
+
+                    while (remainingH > 0) {
+                        if (pageNum > 0) pdf.addPage();
+
+                        // 计算本页截取高度
+                        const sliceH = Math.min(pageContentH, remainingH);
+                        const sliceCanvas = document.createElement('canvas');
+                        sliceCanvas.width = fullCanvas.width;
+                        sliceCanvas.height = Math.round((sliceH / imgH) * fullCanvas.height);
+                        const sCtx = sliceCanvas.getContext('2d');
+                        sCtx.drawImage(fullCanvas,
+                            0, Math.round((currentY / imgH) * fullCanvas.height),
+                            fullCanvas.width, sliceCanvas.height,
+                            0, 0, fullCanvas.width, sliceCanvas.height
+                        );
+
+                        const imgData = sliceCanvas.toDataURL('image/jpeg', 0.95);
+                        pdf.addImage(imgData, 'JPEG', margin, margin, imgW, sliceH);
+
+                        currentY += sliceH;
+                        remainingH -= sliceH;
+                        pageNum++;
+                    }
+
+                    pdf.save(`儿童数学能力测评报告_${new Date().toISOString().slice(0, 10)}.pdf`);
+                    modal.style.display = 'none';
+                } catch (err) {
+                    console.error('PDF导出失败:', err);
+                    alert('PDF导出失败，请重试。');
+                }
+                confirmBtn.innerHTML = '确认导出';
+                confirmBtn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-file-pdf"></i> 一键导出PDF报告';
+                btn.disabled = false;
+            };
+
+            // 取消
+            pdfCancelHandler = function() {
+                modal.style.display = 'none';
+                btn.innerHTML = '<i class="fas fa-file-pdf"></i> 一键导出PDF报告';
+                btn.disabled = false;
+            };
+
+            confirmBtn.addEventListener('click', pdfConfirmHandler);
+            cancelBtn.addEventListener('click', pdfCancelHandler);
+
+            btn.innerHTML = '<i class="fas fa-file-pdf"></i> 一键导出PDF报告';
+            btn.disabled = false;
+        }
+    </script>
+</body>
+</html>
